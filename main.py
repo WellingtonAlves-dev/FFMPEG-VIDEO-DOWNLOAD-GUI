@@ -2,27 +2,28 @@
 import PySimpleGUI as sg
 import os.path
 import subprocess
+import ptoaster
 from threading import Thread
 sg.theme("SystemDefault1")
 
 class BaixarVideo(Thread):
-    def __init__(self, path_ffmpeg, link_file, name_file, diretorio, carregar_pasta):
+    def __init__(self, path_ffmpeg, link_file, name_file, diretorio):
         Thread.__init__(self)
         self.path_ffmpeg = path_ffmpeg
         self.link_file = link_file
         self.name_file = name_file
         self.diretorio = diretorio
-        self.carregar_pasta = carregar_pasta
     def run(self):
         new_name = self.name_file + ".mp4"
         arquivo_salvar = os.path.join(self.diretorio, new_name)
         ffmpeg = self.path_ffmpeg
         cmd = f'"{ffmpeg}" -i "{self.link_file}" -c copy "{arquivo_salvar}"'
         resultado = subprocess.getstatusoutput(cmd)
+        print(resultado)
         if(resultado[0] == 0):
-            sg.Popup("Video baixado com sucesso")
+            ptoaster.notify("Sucesso", f"O seu video foi {self.name_file} foi baixado com sucesso")
         else:
-            sg.PopupError("Não foi possivel baixar o video")
+            ptoaster.notify("Erro", f"Não foi possivel baixar o video", icon=ptoaster.icon_error)
 class Gui:
     def __init__(self, baixarVideo):
         self.path_ffmpeg = ""
@@ -72,12 +73,13 @@ class Gui:
             elif event == "-FOLDER-":
                 self.diretorio = values["-FOLDER-"]
                 file_list = self.carregar_pastas()
+                window['-ITENS-'].update(file_list)
             elif event == "baixar":
                 self.link_file = values["-LINK-"]
                 self.name_file = values["-NOME-"]
+                ptoaster.notify("Começou", f"O download do {self.name_file} começou")
                 video_download = self.baixarVideo(
-                    self.path_ffmpeg, self.link_file, self.name_file, self.diretorio, self.carregar_pastas
-                )
+                    self.path_ffmpeg, self.link_file, self.name_file, self.diretorio)
                 video_download.start()
             elif event == "-CONFIG-":
                 self.config_window()
